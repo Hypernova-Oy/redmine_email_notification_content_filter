@@ -1,91 +1,114 @@
 module MailerPatch
-  def self.included(base) # :nodoc:
-    base.send(:include, InstanceMethods)
+  def issue_add(user, issue)
 
-    base.class_eval do
-      alias_method_chain :issue_add, :email_filter
-      alias_method_chain :issue_edit, :email_filter
+    show_journal_details = true
+    show_journal_author = true
+
+    redmine_headers 'Issue-Tracker' => issue.tracker.name,
+                    'Issue-Id' => issue.id
+    if issue.project.module_enabled?('email_notification_content_filter')
+      if Setting.plugin_redmine_email_notification_content_filter['removeDescription']
+        issue.description = ''
+      end
+      if Setting.plugin_redmine_email_notification_content_filter['removeSubject']
+        issue.subject = l(:issue_created)
+      end
+      if Setting.plugin_redmine_email_notification_content_filter['removeVisibleDetails']
+        show_journal_details = false
+      else
+        redmine_headers 'Project' => issue.project.identifier
+      end
+      if Setting.plugin_redmine_email_notification_content_filter['removeAuthor']
+        show_journal_author = false
+      else
+        redmine_headers 'Issue-Author' => issue.author.login,
+                        'Issue-Assignee' => assignee_for_header(issue)
+      end
+      if Setting.plugin_redmine_email_notification_content_filter['removeStatus']
+        issue.status.name = ''
+      end
     end
+
+    message_id issue
+    references issue
+    @author = issue.author
+    @email_notification_content_filter_enabled = issue.project.module_enabled?('email_notification_content_filter')
+    @issue = issue
+    @user = user
+    @issue_url = url_for(:controller => 'issues', :action => 'show', :id => issue)
+    @show_journal_author = show_journal_author
+    @show_journal_details = show_journal_details
+    if Setting.plugin_redmine_email_notification_content_filter['removeSubject']
+      subject = "[#{issue.tracker.name} ##{issue.id}] "
+    else
+      subject = "[#{issue.project.name} - #{issue.tracker.name} ##{issue.id}] "
+    end
+    if !Setting.plugin_redmine_email_notification_content_filter['removeStatus']
+      subject += "(#{issue.status.name}) " if Setting.show_status_changes_in_mail_subject?
+    end
+    subject += " #{issue.subject}"
+    mail :to => user,
+      :subject => subject
+
   end
 
-  module InstanceMethods
-    def issue_add_with_email_filter(issue, to_users, cc_users)
-      if issue.project.module_enabled?('email_notification_content_filter')
-        if Setting.plugin_redmine_email_notification_content_filter['removeDescription']
-          issue.description = ''
-        end
-        if Setting.plugin_redmine_email_notification_content_filter['removeSubject']
-          issue.subject = ''
-        end
-      end
-      issue_add_without_email_filter(issue, to_users, cc_users)
-    end
+  def issue_edit(user, journal)
+    issue = journal.journalized
 
-    def issue_edit_with_email_filter(journal, _to_users, _cc_users)
-      if Rails::VERSION::MAJOR >= 3
-        issue = journal.journalized
-        if issue.project.module_enabled?('email_notification_content_filter')
-          if Setting.plugin_redmine_email_notification_content_filter['removeDescription']
-            issue.description = ''
-          end
-          if Setting.plugin_redmine_email_notification_content_filter['removeSubject']
-            issue.subject = ''
-          end
-        end
-        redmine_headers 'Project' => issue.project.identifier,
-                        'Issue-Id' => issue.id,
-                        'Issue-Author' => issue.author.login
-        redmine_headers 'Issue-Assignee' => issue.assigned_to.login if issue.assigned_to
-        message_id journal
-        references issue
-        if Setting.plugin_redmine_email_notification_content_filter['removeNote']
-          journal.notes = ''
-        end
-        @author = journal.user
-        s = "[#{issue.project.name} - #{issue.tracker.name} ##{issue.id}] "
-        s << "(#{issue.status.name}) " if journal.new_value_for('status_id')
-        s << issue.subject
-        @issue = issue
-        @users = _to_users + _cc_users
-        @journal = journal
-        @journal_details = journal.visible_details(@users.first)
-        @issue_url = url_for(controller: 'issues', action: 'show', id: issue, anchor: "change-#{journal.id}")
-        mail to: _to_users,
-             cc: _cc_users,
-             subject: s
+    show_journal_details = true
+    show_journal_author = true
+
+    redmine_headers 'Issue-Tracker' => issue.tracker.name,
+                    'Issue-Id' => issue.id
+    if issue.project.module_enabled?('email_notification_content_filter')
+      if Setting.plugin_redmine_email_notification_content_filter['removeDescription']
+        issue.description = ''
+      end
+      if Setting.plugin_redmine_email_notification_content_filter['removeSubject']
+        issue.subject = l(:issue_updated)
+      end
+      if Setting.plugin_redmine_email_notification_content_filter['removeNote']
+        journal.notes = ''
+      end
+      if Setting.plugin_redmine_email_notification_content_filter['removeVisibleDetails']
+        show_journal_details = false
       else
-        issue = journal.journalized.reload
-        if issue.project.module_enabled?('email_notification_content_filter')
-          if Setting.plugin_redmine_email_notification_content_filter['removeDescription']
-            issue.description = ''
-          end
-          if Setting.plugin_redmine_email_notification_content_filter['removeSubject']
-            issue.subject = ''
-          end
-        end
-        redmine_headers 'Project' => issue.project.identifier,
-                        'Issue-Id' => issue.id,
-                        'Issue-Author' => issue.author.login
-        redmine_headers 'Issue-Assignee' => issue.assigned_to.login if issue.assigned_to
-        message_id journal
-        references issue
-        if Setting.plugin_redmine_email_notification_content_filter['removeNote']
-          journal.notes = ''
-        end
-        @author = journal.user
-        recipients issue.recipients
-        # Watchers in cc
-        cc(issue.watcher_recipients - @recipients)
-        s = "[#{issue.project.name} - #{issue.tracker.name} ##{issue.id}] "
-        s << "(#{issue.status.name}) " if journal.new_value_for('status_id')
-        s << issue.subject
-        subject s
-        body issue: issue,
-             journal: journal,
-             issue_url: url_for(controller: 'issues', action: 'show', id: issue, anchor: "change-#{journal.id}")
-
-        render_multipart('issue_edit', body)
+        redmine_headers 'Project' => issue.project.identifier
+      end
+      if Setting.plugin_redmine_email_notification_content_filter['removeAuthor']
+        show_journal_author = false
+      else
+        redmine_headers 'Issue-Author' => issue.author.login,
+                        'Issue-Assignee' => assignee_for_header(issue)
+      end
+      if Setting.plugin_redmine_email_notification_content_filter['removeStatus']
+        issue.status.name = ''
       end
     end
+
+    message_id journal
+    references issue
+    @author = journal.user
+    if Setting.plugin_redmine_email_notification_content_filter['removeSubject']
+      s = "[#{issue.tracker.name} ##{issue.id}] "
+    else
+      s = "[#{issue.project.name} - #{issue.tracker.name} ##{issue.id}] "
+    end
+    if !Setting.plugin_redmine_email_notification_content_filter['removeStatus']
+      s += "(#{issue.status.name}) " if journal.new_value_for('status_id') && Setting.show_status_changes_in_mail_subject?
+    end
+    s += issue.subject
+    @email_notification_content_filter_enabled = issue.project.module_enabled?('email_notification_content_filter')
+    @issue = issue
+    @user = user
+    @journal = journal
+    @journal_details = journal.visible_details
+    @show_journal_author = show_journal_author
+    @show_journal_details = show_journal_details
+    @issue_url = url_for(:controller => 'issues', :action => 'show', :id => issue, :anchor => "change-#{journal.id}")
+
+    mail :to => user,
+      :subject => s
+
   end
 end

@@ -1,0 +1,10 @@
+<% if @email_notification_content_filter_enabled == true && @show_journal_author == false %>
+<%= l(:text_issue_added, :id => link_to("##{@issue.id}", @issue_url), :author => l(:name_hidden_for_privacy)).html_safe %>
+<% else %>
+<%= l(:text_issue_added, :id => link_to("##{@issue.id}", @issue_url), :author => h(@issue.author)).html_safe %>
+<% end %>
+
+<% if @email_notification_content_filter_enabled == false || @show_journal_details == true %>
+<hr />
+<%= render :partial => 'issue', :formats => [:html], :locals => { :issue => @issue, :user => @user, :issue_url => @issue_url } %>
+<% end %>

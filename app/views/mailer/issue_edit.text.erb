@@ -1,0 +1,19 @@
+<%= "(#{l(:field_private_notes)}) " if @journal.private_notes? -%>
+<% if @email_notification_content_filter_enabled == true && @show_journal_author == false %>
+<%= l(:text_issue_updated, :id => "##{@issue.id}", :author => l(:name_hidden_for_privacy)) %>
+<% else %>
+<%= l(:text_issue_updated, :id => "##{@issue.id}", :author => @journal.user) %>
+<% end %>
+
+<% if @email_notification_content_filter_enabled == false || @show_journal_details == true %>
+<% details_to_strings(@journal_details, true).each do |string| -%>
+<%= string %>
+<% end -%>
+
+<% if @journal.notes? -%>
+<%= @journal.notes %>
+
+<% end -%>
+----------------------------------------
+<%= render :partial => 'issue', :formats => [:text], :locals => { :issue => @issue, :user => @user, :issue_url => @issue_url } %>
+<% end %>

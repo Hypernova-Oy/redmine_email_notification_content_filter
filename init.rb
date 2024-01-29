@@ -3,15 +3,14 @@
 
 require 'redmine'
 require 'dispatcher' unless Rails::VERSION::MAJOR >= 3
-require 'mailer_patch'
+require File.expand_path 'lib/mailer_patch', __dir__
 
 Redmine::Plugin.register :redmine_email_notification_content_filter do
   name 'Redmine Email Notification Content Filter plugin'
-  author 'Sébastien Leroux'
-  description 'This is a plugin for Redmine that allows to remove the description in the notification emails'
-  version '0.0.2'
-  author_url 'mailto:sleroux@keep.pt'
-  url 'https://github.com/keeps/redmine_email_notification_content_filter'
+  author 'Sébastien Leroux, Lari Taskula'
+  description 'This is a plugin for Redmine that allows to remove the description in the notification emails. Forked from https://github.com/keeps/redmine_email_notification_content_filter'
+  version '5.0.5.1'
+  url 'https://github.com/Hypernova-Oy/redmine_email_notification_content_filter'
   settings(:default => {
     'removeDescriptionFromDocument' => 'false',
     'removeDescriptionFromNews' => 'false',
@@ -22,18 +21,4 @@ Redmine::Plugin.register :redmine_email_notification_content_filter do
   end
 end
 
-
-if Rails::VERSION::MAJOR >= 3
-ActionDispatch::Callbacks.to_prepare do
-	 require_dependency 'mailer'
-  Mailer.send(:include, MailerPatch)
-end
-
-
-else
-	Dispatcher.to_prepare do
-	 require_dependency 'mailer'
-  Mailer.send(:include, MailerPatch)
-end
-
-end
+Mailer.prepend(MailerPatch)

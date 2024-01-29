@@ -1,7 +1,13 @@
 # Portuguese strings go here for Rails i18n
 pt:
+  author: Author
   fieldsToRemove: Campos a remover
   description: Descrição
+  issue_created: Issue created
+  issue_updated: Issue updated
+  name_hidden_for_privacy: (name hidden for privacy)
   notes: Notas
   subject: Assunto
+  status: Status
   project_module_email_notification_content_filter: Filtro de conteúdo dos emails de notificação
+  visible_details: Visible details

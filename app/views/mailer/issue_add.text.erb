@@ -1,0 +1,10 @@
+<% if @email_notification_content_filter_enabled == true && @show_journal_author == false %>
+<%= l(:text_issue_added, :id => "##{@issue.id}", :author => l(:name_hidden_for_privacy)) %>
+<% else %>
+<%= l(:text_issue_added, :id => "##{@issue.id}", :author => @issue.author) %>
+<% end %>
+
+<% if @email_notification_content_filter_enabled == false || @show_journal_details == true %>
+----------------------------------------
+<%= render :partial => 'issue', :formats => [:text], :locals => { :issue => @issue, :user => @user, :issue_url => @issue_url } %>
+<% end %>
