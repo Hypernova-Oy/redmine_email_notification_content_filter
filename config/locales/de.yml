@@ -1,0 +1,13 @@
+# German strings go here for Rails i18n
+de:
+  author: Autor
+  fieldsToRemove: Felder, die entfernt werden sollen
+  description: Beschreibung
+  issue_created: Ticket erstellt
+  issue_updated: Ticket aktualisiert
+  name_hidden_for_privacy: (Name aus Datenschutzgründen verborgen)
+  notes: Notizen
+  subject: Thema
+  status: Status
+  project_module_email_notification_content_filter: E-Mail Detailgrad Filter
+  visible_details: Sichtbare Details
